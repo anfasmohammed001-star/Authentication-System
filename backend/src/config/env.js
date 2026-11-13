@@ -75,8 +75,14 @@ const allowedSameSite = new Set(['strict', 'lax', 'none']);
 const rawSameSite = (process.env.COOKIE_SAME_SITE || 'lax').toLowerCase();
 const cookieSameSite = allowedSameSite.has(rawSameSite) ? rawSameSite : 'lax';
 
-const corsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5000,http://127.0.0.1:5000')
-  .split(',')
+const defaultCorsOrigins = [
+  'http://localhost:5000',
+  'http://127.0.0.1:5000',
+  'https://signauthe.netlify.app',
+  'https://auth-teal-psi.vercel.app',
+];
+
+const corsOrigins = (process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : defaultCorsOrigins)
   .map((origin) => origin.trim())
   .filter(Boolean);
 

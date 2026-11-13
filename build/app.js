@@ -19,16 +19,30 @@
       ...options,
     };
 
-    const response = await fetch(url, config);
-    let payload = null;
+    let response;
     try {
-      payload = await response.json();
+      response = await fetch(url, config);
     } catch {
-      payload = null;
+      return { ok: false, status: 0, payload: null };
     }
 
+    const contentType = response.headers.get('content-type') || '';
+    const isJson = contentType.includes('application/json');
+
+    let payload = null;
+    if (isJson) {
+      try {
+        payload = await response.json();
+      } catch {
+        payload = null;
+      }
+    }
+
+    // Only consider the request successful if HTTP status is 2xx, the response is JSON, and payload has no explicit error
+    const isSuccess = response.ok && isJson && Boolean(payload && payload.success !== false);
+
     return {
-      ok: response.ok,
+      ok: isSuccess,
       status: response.status,
       payload,
     };
@@ -121,9 +135,15 @@
   }
 
   async function redirectIfAlreadyAuthenticated() {
+    // If the browser is already at /dashboard or /dashboard.html, never self-redirect
+    const currentPath = window.location.pathname.toLowerCase();
+    if (currentPath === '/dashboard' || currentPath.endsWith('dashboard.html')) {
+      return;
+    }
+
     try {
-      const { ok } = await apiRequest('/api/auth/me', { method: 'GET' });
-      if (ok) {
+      const { ok, payload } = await apiRequest('/api/auth/me', { method: 'GET' });
+      if (ok && payload && payload.success === true && payload.data && payload.data.user) {
         window.location.replace('/dashboard');
       }
     } catch {
@@ -347,8 +367,12 @@
     try {
       const { ok, status, payload } = await apiRequest('/api/dashboard', { method: 'GET' });
       if (!ok || !payload || !payload.data || !payload.data.user) {
-        const reason = status === 401 ? 'auth_required' : 'session_expired';
-        window.location.replace(`/?reason=${reason}`);
+        const currentPath = window.location.pathname.toLowerCase();
+        // Avoid redirecting if already on login/root
+        if (currentPath !== '/' && currentPath !== '/index.html' && currentPath !== '/login' && currentPath !== '/login.html') {
+          const reason = status === 401 ? 'auth_required' : 'session_expired';
+          window.location.replace(`/?reason=${reason}`);
+        }
         return;
       }
 
@@ -364,7 +388,10 @@
       if (loadingEl) loadingEl.classList.add('hidden');
       if (contentEl) contentEl.classList.remove('hidden');
     } catch {
-      window.location.replace('/?reason=auth_required');
+      const currentPath = window.location.pathname.toLowerCase();
+      if (currentPath !== '/' && currentPath !== '/index.html' && currentPath !== '/login' && currentPath !== '/login.html') {
+        window.location.replace('/?reason=auth_required');
+      }
       return;
     }
 

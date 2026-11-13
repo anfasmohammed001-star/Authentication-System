@@ -1,0 +1,24 @@
+'use strict';
+
+const app = require('../backend/src/app');
+const { connectDatabase } = require('../backend/src/config/db');
+const { isNetlifyDatabaseActive } = require('../backend/src/config/netlifyDatabase');
+
+let isConnected = false;
+
+module.exports = async (req, res) => {
+  if (!isConnected) {
+    if (isNetlifyDatabaseActive()) {
+      isConnected = true;
+    } else {
+      try {
+        await connectDatabase();
+        isConnected = true;
+      } catch (err) {
+        console.warn('[VERCEL DB WARNING]', err.message);
+      }
+    }
+  }
+
+  return app(req, res);
+};

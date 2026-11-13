@@ -57,6 +57,19 @@ app.use(
       if (!origin || env.corsOrigins.includes(origin)) {
         return callback(null, true);
       }
+      try {
+        const hostname = new URL(origin).hostname;
+        if (
+          hostname === 'localhost' ||
+          hostname === '127.0.0.1' ||
+          hostname.endsWith('.netlify.app') ||
+          hostname.endsWith('.vercel.app')
+        ) {
+          return callback(null, true);
+        }
+      } catch {
+        // invalid URL format, reject below
+      }
       return callback(new Error('Origin not allowed by CORS policy.'));
     },
     credentials: true,
