@@ -1,6 +1,7 @@
 const serverless = require('serverless-http');
 const app = require('../../backend/src/app');
 const { connectDatabase } = require('../../backend/src/config/db');
+const { isNetlifyDatabaseActive } = require('../../backend/src/config/netlifyDatabase');
 
 let isConnected = false;
 const serverlessHandler = serverless(app);
@@ -10,11 +11,16 @@ module.exports.handler = async (event, context) => {
   context.callbackWaitsForEmptyEventLoop = false;
 
   if (!isConnected) {
-    try {
-      await connectDatabase();
+    if (isNetlifyDatabaseActive()) {
+      console.log('[NETLIFY FUNCTION] Connected via @netlify/database managed Postgres.');
       isConnected = true;
-    } catch (err) {
-      console.warn('[NETLIFY FUNCTION DB WARNING]', err.message);
+    } else {
+      try {
+        await connectDatabase();
+        isConnected = true;
+      } catch (err) {
+        console.warn('[NETLIFY FUNCTION DB WARNING]', err.message);
+      }
     }
   }
 

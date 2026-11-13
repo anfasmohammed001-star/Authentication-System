@@ -4,6 +4,11 @@ const jwt = require('jsonwebtoken');
 const env = require('../../config/env');
 const User = require('../../models/User');
 const RevokedToken = require('../../models/RevokedToken');
+const {
+  isNetlifyDatabaseActive,
+  netlifyUserRepo,
+  netlifyTokenRepo,
+} = require('../../config/netlifyDatabase');
 
 /**
  * Custom domain error for authentication workflows.
@@ -38,7 +43,7 @@ function getDummyPasswordHash() {
 }
 
 /**
- * Map a Mongoose User document into a strictly sanitized public DTO.
+ * Map a User document or row into a strictly sanitized public DTO.
  * Guarantees passwordHash and internal keys are never exposed.
  * @param {import('mongoose').Document | Record<string, any>} user
  */
@@ -55,11 +60,45 @@ function toSafeUser(user) {
 /**
  * Register a new user after checking for duplicate email/username and hashing password with bcrypt (>= 12 rounds).
  * Enforces role='user' regardless of input payload to prevent privilege escalation.
+ * Supports both Netlify Database (Postgres) and MongoDB seamlessly.
  * @param {{ username: string, email: string, password: string }} input
  */
 async function registerUser({ username, email, password }) {
   const usernameNormalized = username.toLowerCase();
 
+  // 1. Netlify Database (Managed Postgres via @netlify/database)
+  if (isNetlifyDatabaseActive()) {
+    const existingUser = await netlifyUserRepo.findOne({ email, usernameNormalized });
+    if (existingUser) {
+      if (existingUser.email.toLowerCase() === email.toLowerCase()) {
+        throw new AuthError(
+          409,
+          'DUPLICATE_EMAIL',
+          'An account with this email address already exists.',
+          [{ field: 'email', message: 'Email address is already registered.' }]
+        );
+      }
+      throw new AuthError(
+        409,
+        'DUPLICATE_USERNAME',
+        'This username is already taken.',
+        [{ field: 'username', message: 'Username is already taken.' }]
+      );
+    }
+
+    const passwordHash = await bcrypt.hash(password, env.bcryptSaltRounds);
+    const createdUser = await netlifyUserRepo.create({
+      username,
+      usernameNormalized,
+      email,
+      passwordHash,
+      role: 'user',
+    });
+
+    return toSafeUser(createdUser);
+  }
+
+  // 2. MongoDB Fallback
   const existingUser = await User.findOne({
     $or: [{ email }, { usernameNormalized }],
   }).lean();
@@ -121,9 +160,69 @@ async function registerUser({ username, email, password }) {
 /**
  * Authenticate a user by email or username, compare password in constant time, and issue a signed JWT.
  * Enforces account lockout after 5 consecutive failed attempts.
+ * Supports both Netlify Database (Postgres) and MongoDB seamlessly.
  * @param {{ identifier: string, identifierType: 'email' | 'username', password: string }} input
  */
 async function loginUser({ identifier, identifierType, password }) {
+  // 1. Netlify Database (Managed Postgres via @netlify/database)
+  if (isNetlifyDatabaseActive()) {
+    const user = await netlifyUserRepo.findOne(
+      identifierType === 'email'
+        ? { email: identifier.toLowerCase() }
+        : { usernameNormalized: identifier.toLowerCase() }
+    );
+
+    if (!user) {
+      await bcrypt.compare(password, getDummyPasswordHash());
+      throw new AuthError(401, 'INVALID_CREDENTIALS', 'Invalid email/username or password.');
+    }
+
+    if (user.lockUntil && user.lockUntil.getTime() > Date.now()) {
+      const remainingMinutes = Math.ceil((user.lockUntil.getTime() - Date.now()) / (60 * 1000));
+      throw new AuthError(
+        423,
+        'ACCOUNT_LOCKED',
+        `Account is temporarily locked due to consecutive failed login attempts. Please try again in ${remainingMinutes} minute(s).`
+      );
+    }
+
+    const isPasswordMatch = await bcrypt.compare(password, user.passwordHash);
+    if (!isPasswordMatch) {
+      const attempts = (user.failedLoginAttempts || 0) + 1;
+      const lockUntil = attempts >= 5 ? new Date(Date.now() + 15 * 60 * 1000) : null;
+      await netlifyUserRepo.updateFailedAttempts(user.id, attempts, lockUntil);
+      throw new AuthError(401, 'INVALID_CREDENTIALS', 'Invalid email/username or password.');
+    }
+
+    if (user.failedLoginAttempts > 0 || user.lockUntil) {
+      await netlifyUserRepo.resetFailedAttempts(user.id);
+    }
+
+    const jti = crypto.randomUUID();
+    const payload = {
+      sub: String(user.id),
+      username: user.username,
+      email: user.email,
+      role: user.role || 'user',
+      tokenVersion: user.tokenVersion || 0,
+      jti,
+    };
+
+    const token = jwt.sign(payload, env.jwtSecret, {
+      algorithm: 'HS256',
+      expiresIn: env.jwtExpiresIn,
+      issuer: env.jwtIssuer,
+      audience: env.jwtAudience,
+    });
+
+    return {
+      user: toSafeUser(user),
+      token,
+      expiresIn: env.jwtExpiresIn,
+    };
+  }
+
+  // 2. MongoDB Fallback
   const query =
     identifierType === 'email'
       ? { email: identifier.toLowerCase() }
@@ -190,6 +289,7 @@ async function loginUser({ identifier, identifierType, password }) {
 
 /**
  * Verify JWT signature, claims, revocation status, and user existence.
+ * Supports both Netlify Database (Postgres) and MongoDB seamlessly.
  * @param {string} token
  */
 async function verifyAndLoadUser(token) {
@@ -211,7 +311,10 @@ async function verifyAndLoadUser(token) {
     throw new AuthError(401, 'INVALID_TOKEN', 'Invalid authentication token claims.');
   }
 
-  const isRevoked = await RevokedToken.exists({ jti: decoded.jti });
+  const isRevoked = isNetlifyDatabaseActive()
+    ? await netlifyTokenRepo.isRevoked(decoded.jti)
+    : await RevokedToken.exists({ jti: decoded.jti });
+
   if (isRevoked) {
     throw new AuthError(
       401,
@@ -220,7 +323,10 @@ async function verifyAndLoadUser(token) {
     );
   }
 
-  const user = await User.findById(decoded.sub).lean();
+  const user = isNetlifyDatabaseActive()
+    ? await netlifyUserRepo.findById(decoded.sub)
+    : await User.findById(decoded.sub).lean();
+
   if (!user) {
     throw new AuthError(401, 'USER_NOT_FOUND', 'User associated with this token no longer exists.');
   }
@@ -260,6 +366,31 @@ async function requestPasswordReset(rawEmail) {
   }
 
   const email = rawEmail.trim().toLowerCase();
+
+  if (isNetlifyDatabaseActive()) {
+    const user = await netlifyUserRepo.findOne({ email });
+    if (!user) {
+      return {
+        success: true,
+        message: 'If that email address is registered, password reset instructions have been generated.',
+      };
+    }
+
+    const rawResetToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawResetToken).digest('hex');
+    await netlifyUserRepo.setResetToken(
+      user.id,
+      tokenHash,
+      new Date(Date.now() + 15 * 60 * 1000)
+    );
+
+    return {
+      success: true,
+      message: 'If that email address is registered, password reset instructions have been generated.',
+      ...(!env.isProduction ? { resetToken: rawResetToken } : {}),
+    };
+  }
+
   const user = await User.findOne({ email });
 
   // Generic response even if account does not exist to prevent enumeration
@@ -301,6 +432,20 @@ async function resetPassword({ token, newPassword }) {
 
   const tokenHash = crypto.createHash('sha256').update(token.trim()).digest('hex');
 
+  if (isNetlifyDatabaseActive()) {
+    const user = await netlifyUserRepo.findByResetToken(tokenHash);
+    if (!user) {
+      throw new AuthError(400, 'INVALID_RESET_TOKEN', 'Invalid or expired password reset token.');
+    }
+    const newHash = await bcrypt.hash(newPassword, env.bcryptSaltRounds);
+    await netlifyUserRepo.resetPassword(user.id, newHash);
+
+    return {
+      success: true,
+      message: 'Password has been reset successfully. Please sign in with your new password.',
+    };
+  }
+
   const user = await User.findOne({
     passwordResetTokenHash: tokenHash,
     passwordResetExpiresAt: { $gt: new Date() },
@@ -331,6 +476,26 @@ async function resetPassword({ token, newPassword }) {
  * @param {{ userId: string, currentPassword: string, newPassword: string }} input
  */
 async function changePassword({ userId, currentPassword, newPassword }) {
+  if (isNetlifyDatabaseActive()) {
+    const user = await netlifyUserRepo.findById(userId);
+    if (!user) {
+      throw new AuthError(404, 'USER_NOT_FOUND', 'User not found.');
+    }
+
+    const isCurrentMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isCurrentMatch) {
+      throw new AuthError(401, 'INVALID_CREDENTIALS', 'Current password is incorrect.');
+    }
+
+    const newHash = await bcrypt.hash(newPassword, env.bcryptSaltRounds);
+    await netlifyUserRepo.updatePassword(user.id, newHash);
+
+    return {
+      success: true,
+      message: 'Password changed successfully. Existing sessions have been invalidated.',
+    };
+  }
+
   const user = await User.findById(userId).select('+passwordHash');
   if (!user) {
     throw new AuthError(404, 'USER_NOT_FOUND', 'User not found.');
@@ -358,6 +523,15 @@ async function changePassword({ userId, currentPassword, newPassword }) {
  * Retrieve user list for administrators (enforces RBAC).
  */
 async function getAdminUsers({ limit = 50, skip = 0 } = {}) {
+  if (isNetlifyDatabaseActive()) {
+    const total = await netlifyUserRepo.count();
+    const users = await netlifyUserRepo.list({ limit, skip });
+    return {
+      total,
+      users: users.map(toSafeUser),
+    };
+  }
+
   const total = await User.countDocuments();
   const users = await User.find()
     .sort({ createdAt: -1 })
@@ -372,7 +546,7 @@ async function getAdminUsers({ limit = 50, skip = 0 } = {}) {
 }
 
 /**
- * Invalidate a JWT by persisting its `jti` to the RevokedToken collection until natural expiration.
+ * Invalidate a JWT by persisting its `jti` to revoked tokens until natural expiration.
  * Safe and idempotent when called without a token or with an already-expired/invalid token.
  * @param {string | null} token
  */
@@ -394,18 +568,26 @@ async function logoutToken(token) {
   }
 
   if (decoded && typeof decoded === 'object' && decoded.jti && decoded.sub && decoded.exp) {
-    await RevokedToken.updateOne(
-      { jti: decoded.jti },
-      {
-        $setOnInsert: {
-          jti: decoded.jti,
-          userId: decoded.sub,
-          expiresAt: new Date(decoded.exp * 1000),
-          revokedAt: new Date(),
+    if (isNetlifyDatabaseActive()) {
+      await netlifyTokenRepo.revoke({
+        jti: decoded.jti,
+        userId: decoded.sub,
+        expiresAt: new Date(decoded.exp * 1000),
+      });
+    } else {
+      await RevokedToken.updateOne(
+        { jti: decoded.jti },
+        {
+          $setOnInsert: {
+            jti: decoded.jti,
+            userId: decoded.sub,
+            expiresAt: new Date(decoded.exp * 1000),
+            revokedAt: new Date(),
+          },
         },
-      },
-      { upsert: true }
-    );
+        { upsert: true }
+      );
+    }
   }
 }
 
@@ -424,6 +606,7 @@ function buildDashboardPayload(user, auth) {
       passwordHashing: `bcrypt (${env.bcryptSaltRounds} rounds)`,
       tokenMechanism: 'JWT (HS256) via HttpOnly cookie with Bearer header fallback',
       revocationEnabled: true,
+      databaseProvider: isNetlifyDatabaseActive() ? 'Netlify Database (Postgres)' : 'MongoDB',
     },
   };
 }

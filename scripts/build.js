@@ -60,3 +60,4 @@ targetDirs.forEach((dir) => {
 });
 
 console.log('Build complete: synchronized static assets to root, frontend, dist, public, and build directories.');
+
