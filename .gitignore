@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Environment Variables & Secrets (CRITICAL: Never commit to Git)
+.env
+*.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# Test Coverage & Logs
+coverage/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS & Editor Artifacts
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
