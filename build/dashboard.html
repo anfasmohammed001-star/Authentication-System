@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard | Secure Authentication System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body data-page="dashboard">
+  <div id="dashboard-loading" class="loading-state" role="status" aria-live="polite">
+    <div class="spinner" aria-hidden="true"></div>
+    <p>Loading dashboard&hellip;</p>
+  </div>
+
+  <div id="dashboard-content" class="dashboard-shell hidden">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <h1 class="topbar-title">Dashboard</h1>
+
+        <div class="topbar-actions">
+          <button id="logout-btn" type="button" class="btn btn-danger">
+            Logout
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="dashboard-main">
+      <div id="dashboard-banner" class="alert hidden" role="alert" aria-live="polite"></div>
+
+      <section class="dashboard-card">
+        <h2 class="welcome-heading">Welcome, <span id="welcome-username">User</span></h2>
+        <p class="email-line">
+          <span class="email-label">Email:</span>
+          <span id="welcome-email" class="email-value">user@example.com</span>
+        </p>
+      </section>
+    </main>
+  </div>
+
+  <script src="/app.js" defer></script>
+</body>
+</html>

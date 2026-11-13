@@ -2,13 +2,220 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="refresh" content="0; url=/login" />
-  <title>Redirecting to Sign In...</title>
-  <script>
-    window.location.replace('/login');
-  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign In | Secure Authentication System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
 </head>
-<body>
-  <p>Redirecting to <a href="/login">Sign In</a>...</p>
+<body data-page="login">
+  <main class="auth-shell">
+    <div class="auth-container-wrapper">
+      <!-- ========================================================================= -->
+      <!-- 3D CLAYMORPHISM DECORATIVE SHAPES LAYER -->
+      <!-- ========================================================================= -->
+
+      <!-- 1. Top-Right: Matte light-gray 3D Jack (BEHIND card & cube) -->
+      <div class="decor-shape shape-jack" aria-hidden="true">
+        <svg viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="jackMatteL" x1="30" y1="20" x2="130" y2="140" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#FFFFFF" />
+              <stop offset="35%" stop-color="#E6EBF3" />
+              <stop offset="70%" stop-color="#C4CFDE" />
+              <stop offset="100%" stop-color="#9AA8BE" />
+            </linearGradient>
+            <radialGradient id="jackKnobL" cx="35%" cy="35%" r="65%">
+              <stop offset="0%" stop-color="#FFFFFF" />
+              <stop offset="55%" stop-color="#DDE4EF" />
+              <stop offset="100%" stop-color="#A2B0C4" />
+            </radialGradient>
+          </defs>
+          <rect x="42" y="70" width="76" height="20" rx="10" transform="rotate(-40 80 80)" fill="url(#jackMatteL)" />
+          <circle cx="48" cy="45" r="14" fill="url(#jackKnobL)" />
+          <circle cx="112" cy="115" r="14" fill="url(#jackKnobL)" />
+          <rect x="18" y="70" width="124" height="20" rx="10" fill="url(#jackMatteL)" />
+          <circle cx="24" cy="80" r="15" fill="url(#jackKnobL)" />
+          <circle cx="136" cy="80" r="15" fill="url(#jackKnobL)" />
+          <rect x="70" y="18" width="20" height="124" rx="10" fill="url(#jackMatteL)" />
+          <circle cx="80" cy="24" r="15" fill="url(#jackKnobL)" />
+          <circle cx="80" cy="136" r="15" fill="url(#jackKnobL)" />
+          <circle cx="80" cy="80" r="16" fill="url(#jackKnobL)" />
+        </svg>
+      </div>
+
+      <!-- 2. Top-Right: Rounded Royal-Blue 3D Cube (OVERLAPPING card top-right corner) -->
+      <div class="decor-shape shape-cube" aria-hidden="true">
+        <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="cubeTopL" x1="45" y1="25" x2="155" y2="95" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#8DA0FF" />
+              <stop offset="40%" stop-color="#4D5DF7" />
+              <stop offset="100%" stop-color="#3040E0" />
+            </linearGradient>
+            <linearGradient id="cubeLeftL" x1="30" y1="90" x2="105" y2="185" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#3545E8" />
+              <stop offset="60%" stop-color="#2230C4" />
+              <stop offset="100%" stop-color="#141E94" />
+            </linearGradient>
+            <linearGradient id="cubeRightL" x1="105" y1="90" x2="180" y2="185" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#2532C2" />
+              <stop offset="50%" stop-color="#17229C" />
+              <stop offset="100%" stop-color="#0D1469" />
+            </linearGradient>
+            <linearGradient id="specularGleamL" x1="100" y1="20" x2="100" y2="92" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.8" />
+              <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
+            </linearGradient>
+            <radialGradient id="cubeGlowL" cx="50%" cy="30%" r="50%">
+              <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.45" />
+              <stop offset="100%" stop-color="#3040E0" stop-opacity="0" />
+            </radialGradient>
+          </defs>
+          <path d="M26 73 L98 108 L98 182 L26 147 Z" fill="url(#cubeLeftL)" />
+          <path d="M98 108 L174 73 L174 147 L98 182 Z" fill="url(#cubeRightL)" />
+          <path d="M97 22 C101 18 107 18 111 22 L174 62 C178 65 179 70 176 74 L112 100 C107 102 101 102 96 100 L32 74 C28 71 28 66 32 62 Z" fill="url(#cubeTopL)" />
+          <path d="M97 24 C100 21 106 21 109 24 L145 47 C140 45 130 42 118 42 L80 34 Z" fill="url(#specularGleamL)" opacity="0.9" />
+          <path d="M97 22 C101 18 107 18 111 22 L174 62 C178 65 179 70 176 74 L112 100 C107 102 101 102 96 100 L32 74 C28 71 28 66 32 62 Z" fill="url(#cubeGlowL)" />
+        </svg>
+      </div>
+
+      <!-- 3. Bottom-Left: Glossy Royal-Blue 3D Torus (OVERLAPPING card bottom-left corner) -->
+      <div class="decor-shape shape-torus" aria-hidden="true">
+        <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="torusBodyL" cx="38%" cy="32%" r="65%">
+              <stop offset="0%" stop-color="#9FB0FF" />
+              <stop offset="25%" stop-color="#5364FF" />
+              <stop offset="60%" stop-color="#2A37D9" />
+              <stop offset="90%" stop-color="#141E96" />
+              <stop offset="100%" stop-color="#0B1159" />
+            </radialGradient>
+            <radialGradient id="torusHoleL" cx="65%" cy="68%" r="45%">
+              <stop offset="0%" stop-color="#7E90FF" stop-opacity="0.8" />
+              <stop offset="45%" stop-color="#1C27AB" />
+              <stop offset="100%" stop-color="#080C42" />
+            </radialGradient>
+            <linearGradient id="torusGleamL" x1="45" y1="30" x2="135" y2="80" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95" />
+              <stop offset="30%" stop-color="#FFFFFF" stop-opacity="0.4" />
+              <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
+            </linearGradient>
+          </defs>
+          <circle cx="100" cy="100" r="76" fill="url(#torusBodyL)" />
+          <circle cx="100" cy="100" r="34" fill="url(#torusHoleL)" />
+          <circle cx="100" cy="100" r="28" fill="#6E7BF2" fill-opacity="0.22" />
+          <path d="M50 85 C55 52 82 35 118 38 C140 40 156 50 162 65" stroke="url(#torusGleamL)" stroke-width="7" stroke-linecap="round" opacity="0.85" />
+          <ellipse cx="64" cy="62" rx="10" ry="5" transform="rotate(-30 64 62)" fill="#FFFFFF" opacity="0.75" />
+        </svg>
+      </div>
+
+      <!-- 4. Bottom-Right: Thin Blue Rod (EXTENDING from behind bottom edge) -->
+      <div class="decor-shape shape-rod" aria-hidden="true">
+        <div class="shape-rod-inner"></div>
+      </div>
+
+      <!-- 5. Bottom-Right: Dark Charcoal 3D Sphere (AT the corner) -->
+      <div class="decor-shape shape-sphere" aria-hidden="true">
+        <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="sphereGradL" cx="36%" cy="32%" r="68%">
+              <stop offset="0%" stop-color="#697384" />
+              <stop offset="28%" stop-color="#373D48" />
+              <stop offset="65%" stop-color="#1B1E26" />
+              <stop offset="90%" stop-color="#0E1015" />
+              <stop offset="100%" stop-color="#07080B" />
+            </radialGradient>
+            <radialGradient id="sphereBounceL" cx="50%" cy="92%" r="35%">
+              <stop offset="0%" stop-color="#9BB0E0" stop-opacity="0.4" />
+              <stop offset="100%" stop-color="#1B1E26" stop-opacity="0" />
+            </radialGradient>
+          </defs>
+          <circle cx="60" cy="60" r="48" fill="url(#sphereGradL)" />
+          <circle cx="60" cy="60" r="48" fill="url(#sphereBounceL)" />
+          <ellipse cx="44" cy="40" rx="7" ry="4" transform="rotate(-25 44 40)" fill="#FFFFFF" opacity="0.45" />
+        </svg>
+      </div>
+
+      <!-- 6. Bottom-Right: Blurred Dark Pill/Capsule (FOREGROUND depth-of-field) -->
+      <div class="decor-shape shape-capsule" aria-hidden="true">
+        <div class="shape-capsule-inner"></div>
+      </div>
+
+      <!-- ========================================================================= -->
+      <!-- MAIN FROSTED GLASS CARD -->
+      <!-- ========================================================================= -->
+      <section class="auth-card" aria-labelledby="login-heading">
+        <h1 id="login-heading" class="page-heading">Welcome back</h1>
+        <p class="page-subheading">Sign in with your email or username to access your protected dashboard.</p>
+
+        <div id="form-banner" class="alert hidden" role="alert" aria-live="polite"></div>
+
+        <form id="login-form" class="auth-form" novalidate>
+          <div class="auth-form-grid">
+            <!-- Left Column: Input Fields -->
+            <div class="auth-form-inputs">
+              <div class="form-group">
+                <label class="form-label" for="login-identifier">Email or Username</label>
+                <input
+                  id="login-identifier"
+                  name="identifier"
+                  type="text"
+                  class="form-input"
+                  placeholder="you@example.com or john_doe"
+                  autocomplete="username"
+                  required
+                />
+                <span id="login-identifier-error" class="field-error hidden"></span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="login-password">Password</label>
+                <div class="input-wrapper">
+                  <input
+                    id="login-password"
+                    name="password"
+                    type="password"
+                    class="form-input with-toggle"
+                    placeholder="Enter your password"
+                    autocomplete="current-password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    class="toggle-password-btn"
+                    data-toggle-password="login-password"
+                    aria-label="Show password"
+                  >
+                    Show
+                  </button>
+                </div>
+                <span id="login-password-error" class="field-error hidden"></span>
+              </div>
+            </div>
+
+            <!-- Right Column: Primary Action Only -->
+            <div class="auth-form-actions">
+              <button id="login-submit-btn" type="submit" class="btn btn-primary">
+                Sign In
+              </button>
+
+              <div class="auth-footer">
+                Don&rsquo;t have an account?
+                <a href="/register" class="auth-link">Create an account</a>
+              </div>
+            </div>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <p class="security-footnote">
+      Protected by bcrypt password hashing, strict input sanitization, and signed HttpOnly JWT cookies with server-side logout revocation.
+    </p>
+  </main>
+
+  <script src="/app.js" defer></script>
 </body>
 </html>

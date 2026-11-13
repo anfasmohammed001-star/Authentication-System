@@ -15,7 +15,7 @@
 # 2. Clean URL rewrites for authentication pages
 [[redirects]]
   from = "/login"
-  to = "/index.html"
+  to = "/login.html"
   status = 200
 
 [[redirects]]

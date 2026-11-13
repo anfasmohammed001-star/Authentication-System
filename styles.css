@@ -1,0 +1,882 @@
+:root {
+  --bg-page: #7d88f5;
+  --bg-glass: rgba(255, 255, 255, 0.25);
+  --border-glass: rgba(255, 255, 255, 0.45);
+  --text-dark: #0d0f22;
+  --text-body: #334155;
+  --text-muted: #64748b;
+  --input-bg: rgba(255, 255, 255, 0.92);
+  --input-border: rgba(255, 255, 255, 0.65);
+  --btn-dark: #0b0d1e;
+  --btn-dark-hover: #161936;
+  --accent-blue: #3e4ef2;
+  --accent-glow: rgba(62, 78, 242, 0.28);
+  --success-bg: rgba(16, 185, 129, 0.16);
+  --success-border: rgba(16, 185, 129, 0.45);
+  --success-text: #065f46;
+  --error-bg: rgba(244, 63, 94, 0.16);
+  --error-border: rgba(244, 63, 94, 0.45);
+  --error-text: #9f1239;
+  --info-bg: rgba(14, 165, 233, 0.16);
+  --info-border: rgba(14, 165, 233, 0.45);
+  --info-text: #075985;
+  --font-sans: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', Consolas, monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  min-height: 100%;
+  font-family: var(--font-sans);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ==========================================================================
+   AUTH PAGES (LOGIN & REGISTRATION) — 3D CLAYMORPHISM & FROSTED GLASS
+   ========================================================================== */
+
+body[data-page="login"],
+body[data-page="register"] {
+  min-height: 100vh;
+  background-color: var(--bg-page);
+  background-image:
+    radial-gradient(circle at 18% 15%, rgba(255, 255, 255, 0.48) 0%, transparent 45%),
+    linear-gradient(135deg, rgba(106, 117, 240, 0.48) 0%, rgba(184, 192, 255, 0.58) 100%),
+    url('/assets/background.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  color: var(--text-dark);
+}
+
+.auth-shell {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+  position: relative;
+}
+
+/* Atmospheric Sunbeam / Cloud Ambient Glows */
+.auth-shell::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 420px;
+  height: 420px;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.auth-shell::after {
+  content: '';
+  position: absolute;
+  bottom: 5%;
+  right: 5%;
+  width: 460px;
+  height: 460px;
+  background: rgba(106, 117, 240, 0.32);
+  border-radius: 50%;
+  filter: blur(130px);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Main Container Relative Wrapper for 3D Shapes & Glass Card */
+.auth-container-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 860px;
+  margin: 1.5rem auto;
+  z-index: 5;
+}
+
+body[data-page="register"] .auth-container-wrapper {
+  max-width: 920px;
+}
+
+/* ==========================================================================
+   3D CLAYMORPHISM DECORATIVE ELEMENTS
+   ========================================================================== */
+
+.decor-shape {
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* 1. Top-Right: Matte light-gray 3D Jack (BEHIND the cube & card) */
+.shape-jack {
+  top: -46px;
+  right: -24px;
+  z-index: 2;
+  filter: blur(0.8px) drop-shadow(6px 14px 18px rgba(30, 41, 69, 0.22));
+}
+
+.shape-jack svg {
+  width: 130px;
+  height: 130px;
+  display: block;
+}
+
+/* 2. Top-Right: Rounded Royal-Blue 3D Cube (OVERLAPPING card top-right corner) */
+.shape-cube {
+  top: -64px;
+  right: -38px;
+  z-index: 20;
+  filter: drop-shadow(-12px 22px 28px rgba(14, 20, 110, 0.48));
+}
+
+.shape-cube svg {
+  width: 175px;
+  height: 175px;
+  display: block;
+}
+
+/* 3. Bottom-Left: Glossy Royal-Blue 3D Torus (OVERLAPPING card bottom-left corner with zero text obstruction) */
+.shape-torus {
+  bottom: -55px;
+  left: -65px;
+  z-index: 8;
+  filter: drop-shadow(-10px 20px 25px rgba(15, 22, 118, 0.45));
+}
+
+.shape-torus svg {
+  width: 148px;
+  height: 148px;
+  display: block;
+}
+
+/* 4. Bottom-Right: Thin Blue Rod (EXTENDING from behind bottom card edge) */
+.shape-rod {
+  bottom: -32px;
+  right: 120px;
+  z-index: 1;
+  transform: rotate(44deg);
+  filter: drop-shadow(6px 12px 14px rgba(15, 22, 118, 0.35));
+}
+
+.shape-rod-inner {
+  width: 160px;
+  height: 18px;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, #7080ff 0%, #3545eb 50%, #121b82 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.45);
+  position: relative;
+}
+
+.shape-rod-inner::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 14px;
+  right: 14px;
+  height: 3px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+/* 5. Bottom-Right: Dark Charcoal 3D Sphere (AT the bottom-right corner) */
+.shape-sphere {
+  bottom: -32px;
+  right: -24px;
+  z-index: 10;
+  filter: drop-shadow(8px 16px 22px rgba(0, 0, 0, 0.5));
+}
+
+.shape-sphere svg {
+  width: 92px;
+  height: 92px;
+  display: block;
+}
+
+/* 6. Bottom-Right: Blurred Dark Pill/Capsule (FOREGROUND camera depth-of-field) */
+.shape-capsule {
+  bottom: -46px;
+  right: 36px;
+  z-index: 30;
+  transform: rotate(-26deg);
+  filter: blur(4.5px) drop-shadow(10px 20px 20px rgba(0, 0, 0, 0.45));
+}
+
+.shape-capsule-inner {
+  width: 130px;
+  height: 48px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #3b424e 0%, #1d212a 50%, #0a0c10 100%);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.shape-capsule-inner::after {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 18px;
+  right: 26px;
+  height: 7px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.08) 100%);
+}
+
+/* ==========================================================================
+   FROSTED GLASS CARD CONTAINER
+   ========================================================================== */
+
+.auth-card {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  background: var(--bg-glass);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid var(--border-glass);
+  border-radius: 32px;
+  padding: 2.75rem 3.25rem;
+  box-shadow:
+    0 30px 70px -15px rgba(20, 28, 78, 0.32),
+    0 15px 30px -10px rgba(0, 0, 0, 0.15),
+    inset 0 1px 1px rgba(255, 255, 255, 0.7);
+}
+
+/* Brand Header */
+.brand-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.35rem 0.85rem 0.35rem 0.4rem;
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 9999px;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+}
+
+.brand-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4f5ff7, #2232c4);
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(34, 50, 196, 0.35);
+}
+
+.brand-title {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--text-dark);
+  letter-spacing: -0.01em;
+}
+
+.brand-subtitle {
+  font-size: 0.75rem;
+  color: var(--text-body);
+  font-weight: 500;
+}
+
+/* Headings */
+.page-heading {
+  font-size: 2.15rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: var(--text-dark);
+  margin-bottom: 0.35rem;
+  line-height: 1.2;
+}
+
+.page-subheading {
+  font-size: 0.95rem;
+  color: var(--text-body);
+  margin-bottom: 1.75rem;
+  font-weight: 500;
+  max-width: 620px;
+}
+
+/* Alert Banners */
+.alert {
+  padding: 0.85rem 1.25rem;
+  border-radius: 16px;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-weight: 600;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.alert-error {
+  background: var(--error-bg);
+  border-color: var(--error-border);
+  color: var(--error-text);
+}
+
+.alert-success {
+  background: var(--success-bg);
+  border-color: var(--success-border);
+  color: var(--success-text);
+}
+
+.alert-info {
+  background: var(--info-bg);
+  border-color: var(--info-border);
+  color: var(--info-text);
+}
+
+/* ==========================================================================
+   FORM CONTROLS & 2-COLUMN LAYOUT
+   ========================================================================== */
+
+.auth-form {
+  width: 100%;
+}
+
+.auth-form-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 2.25rem;
+  align-items: center;
+}
+
+.auth-form-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 1.05rem;
+  position: relative;
+  z-index: 25;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  position: relative;
+}
+
+.form-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  padding-left: 0.75rem;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+/* Pill-Shaped Input Fields Matching Screenshot 1 */
+.form-input {
+  width: 100%;
+  padding: 0.85rem 1.4rem;
+  border-radius: 9999px;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--text-dark);
+  font-size: 0.95rem;
+  font-family: inherit;
+  font-weight: 500;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.15s ease;
+}
+
+.form-input.with-toggle {
+  padding-right: 4.5rem;
+}
+
+.form-input::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.form-input:focus {
+  outline: none;
+  background: #ffffff;
+  border-color: var(--accent-blue);
+  box-shadow:
+    0 0 0 3px var(--accent-glow),
+    inset 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.form-input.input-invalid {
+  border-color: #f43f5e;
+  background: #fff1f2;
+}
+
+.toggle-password-btn {
+  position: absolute;
+  right: 0.9rem;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.35rem 0.65rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.toggle-password-btn:hover {
+  color: var(--text-dark);
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.field-hint {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  padding-left: 0.75rem;
+  margin-top: 0.15rem;
+}
+
+.field-error {
+  font-size: 0.8rem;
+  color: #e11d48;
+  font-weight: 600;
+  padding-left: 0.75rem;
+  margin-top: 0.2rem;
+}
+
+/* Right Column Action Group */
+.auth-form-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.1rem;
+  width: 100%;
+}
+
+/* Large Dark Pill-Shaped Button Matching Screenshot 1 */
+.btn-primary {
+  width: 100%;
+  padding: 0.92rem 1.75rem;
+  border-radius: 9999px;
+  background: var(--btn-dark);
+  color: #ffffff;
+  font-size: 0.98rem;
+  font-weight: 700;
+  font-family: inherit;
+  border: none;
+  box-shadow: 0 12px 24px -4px rgba(11, 13, 30, 0.38);
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-decoration: none;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--btn-dark-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 16px 28px -4px rgba(11, 13, 30, 0.48);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: scale(0.98);
+  box-shadow: 0 6px 14px -2px rgba(11, 13, 30, 0.32);
+}
+
+.btn-primary:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* Secondary Navigation Link */
+.auth-footer {
+  font-size: 0.9rem;
+  color: var(--text-body);
+  text-align: center;
+  font-weight: 500;
+}
+
+.auth-link {
+  color: var(--btn-dark);
+  font-weight: 800;
+  text-decoration: none;
+  margin-left: 0.25rem;
+  transition: color 0.15s ease;
+}
+
+.auth-link:hover {
+  text-decoration: underline;
+}
+
+.security-footnote {
+  margin-top: 1.5rem;
+  font-size: 0.78rem;
+  color: rgba(15, 23, 42, 0.75);
+  text-align: center;
+  max-width: 580px;
+  font-weight: 500;
+  position: relative;
+  z-index: 5;
+}
+
+/* Password Strength Checklist for Registration */
+.password-rules {
+  list-style: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem 0.75rem;
+  padding: 0.85rem 1.1rem;
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 18px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+  width: 100%;
+}
+
+.password-rule {
+  font-size: 0.76rem;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+
+.password-rule::before {
+  content: '○';
+  font-size: 0.72rem;
+}
+
+.password-rule.met {
+  color: #059669;
+  font-weight: 700;
+}
+
+.password-rule.met::before {
+  content: '●';
+  color: #059669;
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN (TABLET & MOBILE)
+   ========================================================================== */
+
+@media (max-width: 860px) {
+  .auth-container-wrapper,
+  body[data-page="register"] .auth-container-wrapper {
+    max-width: 580px;
+    margin: 1.5rem auto;
+  }
+
+  .auth-form-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .auth-card {
+    padding: 2.25rem 2rem;
+  }
+
+  .shape-cube {
+    top: -50px;
+    right: -25px;
+  }
+  .shape-cube svg {
+    width: 130px;
+    height: 130px;
+  }
+
+  .shape-jack {
+    top: -35px;
+    right: -15px;
+  }
+  .shape-jack svg {
+    width: 100px;
+    height: 100px;
+  }
+
+  .shape-torus {
+    bottom: -38px;
+    left: -30px;
+  }
+  .shape-torus svg {
+    width: 130px;
+    height: 130px;
+  }
+
+  .shape-sphere {
+    bottom: -24px;
+    right: -15px;
+  }
+  .shape-sphere svg {
+    width: 68px;
+    height: 68px;
+  }
+
+  .shape-capsule {
+    bottom: -32px;
+    right: 25px;
+  }
+  .shape-capsule-inner {
+    width: 105px;
+    height: 40px;
+  }
+}
+
+@media (max-width: 540px) {
+  .auth-shell {
+    padding: 1rem 0.85rem;
+  }
+
+  .auth-card {
+    padding: 1.85rem 1.35rem;
+    border-radius: 24px;
+  }
+
+  .page-heading {
+    font-size: 1.75rem;
+  }
+
+  .page-subheading {
+    font-size: 0.88rem;
+    margin-bottom: 1.25rem;
+  }
+
+  /* Hide background/foreground shapes that could crowd mobile viewports */
+  .shape-jack,
+  .shape-rod,
+  .shape-capsule {
+    display: none;
+  }
+
+  .shape-cube {
+    top: -30px;
+    right: -12px;
+  }
+  .shape-cube svg {
+    width: 90px;
+    height: 90px;
+  }
+
+  .shape-torus {
+    bottom: -26px;
+    left: -16px;
+  }
+  .shape-torus svg {
+    width: 95px;
+    height: 95px;
+  }
+
+  .shape-sphere {
+    bottom: -16px;
+    right: -8px;
+  }
+  .shape-sphere svg {
+    width: 50px;
+    height: 50px;
+  }
+
+  .password-rules {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==========================================================================
+   PROTECTED DASHBOARD STYLING (PRESERVED)
+   ========================================================================== */
+
+body[data-page="dashboard"] {
+  background-color: #0b1120;
+  background-image:
+    radial-gradient(circle at 15% 15%, rgba(99, 102, 241, 0.14), transparent 40%),
+    radial-gradient(circle at 85% 80%, rgba(14, 165, 233, 0.12), transparent 45%);
+  color: #f8fafc;
+}
+
+.dashboard-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  background: rgba(17, 24, 39, 0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  padding: 0.9rem 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.topbar-inner {
+  max-width: 1040px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.topbar-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #f8fafc;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+}
+
+.dashboard-main {
+  max-width: 1040px;
+  width: 100%;
+  margin: 2.5rem auto;
+  padding: 0 1.5rem 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.dashboard-card {
+  background: #111827;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 16px;
+  padding: 2.25rem 2.5rem;
+  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.welcome-heading {
+  font-size: 1.85rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: #f8fafc;
+  line-height: 1.25;
+  margin: 0;
+}
+
+.email-line {
+  font-size: 1.05rem;
+  color: #cbd5e1;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin: 0;
+}
+
+.email-label {
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.email-value {
+  font-weight: 600;
+  color: #f8fafc;
+  word-break: break-all;
+}
+
+.loading-state {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  color: #94a3b8;
+  background-color: #0b1120;
+}
+
+.spinner {
+  width: 34px;
+  height: 34px;
+  border: 3px solid rgba(99, 102, 241, 0.25);
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.78rem 1.25rem;
+  border-radius: 8px;
+  background: #1e293b;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  color: #f8fafc;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: rgba(148, 163, 184, 0.4);
+  background: #273549;
+}
+
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.14);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.6);
+}

@@ -4,7 +4,7 @@
   "description": "Production-structured User Authentication System (Node.js, Express, MongoDB/Mongoose, JWT HttpOnly Cookies, bcrypt) for Task 3",
   "main": "backend/src/server.js",
   "scripts": {
-    "build": "echo 'Build complete'",
+    "build": "node scripts/build.js",
     "start": "node backend/src/server.js",
     "dev": "nodemon backend/src/server.js",
     "test": "jest --runInBand --forceExit",
