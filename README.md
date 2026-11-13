@@ -266,6 +266,100 @@ When a user logs out (`POST /api/auth/logout`), the server:
 
 ---
 
+## API Endpoints Specification
+
+Base URL: `http://localhost:5000` (Local) / `https://signauthe.netlify.app` (Production)
+
+All API responses follow a consistent JSON envelope with a boolean `success` field. Passwords and `passwordHash` values are **never** logged or returned by any endpoint.
+
+### Endpoints Summary Table
+
+| Method | Path | Auth Required | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/health` | No | Health check, server status, and database connectivity check |
+| `POST` | `/api/auth/register` | No | Validate, sanitize, hash password (bcrypt 12 rounds), and register user |
+| `POST` | `/api/auth/login` | No | Verify credentials in constant time, enforce lockout, and issue JWT cookie |
+| `POST` | `/api/auth/logout` | Optional | Revoke active JWT server-side and clear `HttpOnly` cookie |
+| `POST` | `/api/auth/forgot-password` | No | Request single-use cryptographically secure reset token (anti-enumeration) |
+| `POST` | `/api/auth/reset-password` | No | Reset password using valid token and invalidate previous sessions |
+| `POST` | `/api/auth/change-password` | **Yes** | Change password with current password verification |
+| `GET` | `/api/auth/me` | **Yes** | Retrieve authenticated user profile & session expiration |
+| `GET` | `/api/dashboard` | **Yes** | Retrieve protected dashboard payload for authenticated user |
+| `GET` | `/api/auth/admin/users` | **Yes (Admin)** | List registered users with pagination (RBAC enforced) |
+| `GET` | `/api/auth/admin/stats` | **Yes (Admin)** | System security telemetry & configuration audit |
+
+### 1. Register User — `POST /api/auth/register`
+- **Request Body:**
+  ```json
+  {
+    "username": "alice_dev",
+    "email": "alice@example.com",
+    "password": "StrongPassword#2026"
+  }
+  ```
+- **Validation Rules:** Username 3–30 chars (`^[a-zA-Z0-9_-]+$`); email lowercased and RFC-validated; password >= 8 chars with uppercase, lowercase, number, and special character.
+- **Success Response (`201 Created`):**
+  ```json
+  {
+    "success": true,
+    "message": "User registered successfully.",
+    "data": {
+      "user": {
+        "id": "6732f48e1a2b3c4d5e6f7a8b",
+        "username": "alice_dev",
+        "email": "alice@example.com",
+        "role": "user",
+        "createdAt": "2026-11-12T01:56:03.000Z"
+      }
+    }
+  }
+  ```
+
+### 2. User Login — `POST /api/auth/login`
+- **Request Body:**
+  ```json
+  {
+    "identifier": "alice@example.com",
+    "password": "StrongPassword#2026"
+  }
+  ```
+- **Behavior:** Accepts email or username. Enforces 5-attempt account lockout (15-min cooldown). Returns `Set-Cookie: auth_token=<jwt>; HttpOnly; SameSite=Lax; Path=/` and JSON Bearer token.
+- **Success Response (`200 OK`):**
+  ```json
+  {
+    "success": true,
+    "message": "Login successful.",
+    "data": {
+      "user": { "id": "...", "username": "alice_dev", "email": "alice@example.com", "role": "user" },
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "expiresIn": "1h"
+    }
+  }
+  ```
+
+### 3. Session Verification — `GET /api/auth/me` (Protected)
+- **Auth:** `auth_token` cookie or `Authorization: Bearer <jwt>`.
+- **Success Response (`200 OK`):**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "user": { "id": "...", "username": "alice_dev", "email": "alice@example.com", "role": "user" },
+      "session": { "expiresAt": "2026-11-12T02:56:03.000Z" }
+    }
+  }
+  ```
+
+### 4. Protected Dashboard — `GET /api/dashboard` (Protected)
+- **Auth:** `auth_token` cookie or `Authorization: Bearer <jwt>`.
+- **Success Response (`200 OK`):** Returns user profile, session details, and security controls.
+
+### 5. Logout & Token Revocation — `POST /api/auth/logout`
+- **Behavior:** Revokes token `jti` in database blacklist until expiration, clears `auth_token` cookie.
+- **Success Response (`200 OK`):** `{ "success": true, "message": "Logged out successfully." }`
+
+---
+
 ## Security Implementation Details
 
 - **Password Hashing:** Minimum 12 salt rounds enforced. Plaintext passwords never enter the database or logs.
@@ -304,7 +398,6 @@ node tests/manual-verify.js
 
 ## Documentation Links
 
-- [**REST API Documentation**](docs/API_DOCUMENTATION.md): Complete request/response schemas, headers, status codes, and security mechanisms for all 11 endpoints.
 - [**Security Audit Report**](docs/SECURITY_AUDIT.md): 20-point code-level security review covering password hashing, session tokens, injection guards, and secret isolation.
 - [**Requirements Verification Checklist**](docs/REQUIREMENTS_CHECKLIST.md): Official deliverable and evaluation checklist with PASS / FAIL statuses and verification methods.
 - [**Testing & Verification Report**](docs/TESTING_REPORT.md): Detailed output from automated Jest suites and live HTTP integration tests.
