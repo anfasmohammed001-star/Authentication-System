@@ -148,3 +148,4 @@ A comprehensive code-level and runtime security audit was performed across the e
 | **SEC-05** | Unlimited brute-force credential stuffing | High | **RESOLVED** | IP rate-limiting & 5-attempt account lockout |
 | **SEC-06** | Browser history cache leak on protected routes | Medium | **RESOLVED** | `Cache-Control: no-store, no-cache, private` |
 | **SEC-07** | Stale session persistence after password reset | High | **RESOLVED** | `tokenVersion` user counter invalidation |
+

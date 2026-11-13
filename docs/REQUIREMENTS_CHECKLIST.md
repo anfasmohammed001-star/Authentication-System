@@ -78,3 +78,4 @@
 | Requirement / Item | Status | Justification |
 | :--- | :---: | :--- |
 | **One-Time Passwords (OTP)** | **NOT APPLICABLE** | Explicitly excluded per user instructions: *"Do not implement OTP functionality. Ignore OTP-related requirements because OTP is not part of this project."* |
+

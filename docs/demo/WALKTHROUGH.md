@@ -54,3 +54,4 @@ To generate a screen recording (`.mp4` / `.webm`) from this walkthrough:
 1. Launch OBS Studio, Xbox Game Bar (`Win + G`), or Chrome Screen Recorder.
 2. Follow the timed cue script in [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md).
 3. Save the resulting recording in `docs/demo/authentication_system_demo.mp4`.
+

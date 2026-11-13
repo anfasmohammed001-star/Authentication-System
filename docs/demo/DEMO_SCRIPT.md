@@ -99,3 +99,4 @@
 - **Visual:** Red frosted glass alert displays: `"Invalid email/username or password."`
 - **Narrator Script:**  
   *"Finally, entering invalid credentials returns a normalized, safe error message that protects user privacy by preventing account harvesting and username enumeration. The demonstration is complete."*
+

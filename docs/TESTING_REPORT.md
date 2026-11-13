@@ -91,3 +91,4 @@ Verification Summary: 9 passed, 0 failed.
 | **Brute-Force Guard** | 5 consecutive wrong passwords | 6th attempt returns `423 Locked` with remaining lockout seconds. |
 | **Route Protection** | Unauthenticated browser access | `GET /dashboard` returns `302 Found` with `Location: /?reason=auth_required` and `no-store` cache header. |
 | **RBAC** | Admin endpoint authorization | Standard user token receives `403 Forbidden` (`FORBIDDEN_ROLE`). Admin token receives `200 OK`. |
+
