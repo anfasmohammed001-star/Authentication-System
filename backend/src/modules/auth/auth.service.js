@@ -1,6 +1,9 @@
+'use strict';
+
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const env = require('../../config/env');
 const User = require('../../models/User');
 const RevokedToken = require('../../models/RevokedToken');
@@ -9,6 +12,23 @@ const {
   netlifyUserRepo,
   netlifyTokenRepo,
 } = require('../../config/netlifyDatabase');
+const { memoryUserRepo, memoryTokenRepo } = require('../../config/memoryStore');
+
+/**
+ * Determine the active storage adapter:
+ * 1. Netlify Database (managed Postgres)
+ * 2. MongoDB (when Mongoose is connected)
+ * 3. Zero-config Embedded Memory/Persistent Store (fallback for serverless environments)
+ */
+function getActiveRepos() {
+  if (isNetlifyDatabaseActive()) {
+    return { userRepo: netlifyUserRepo, tokenRepo: netlifyTokenRepo, type: 'netlify' };
+  }
+  if (mongoose.connection && mongoose.connection.readyState === 1) {
+    return { type: 'mongoose' };
+  }
+  return { userRepo: memoryUserRepo, tokenRepo: memoryTokenRepo, type: 'memory' };
+}
 
 /**
  * Custom domain error for authentication workflows.
@@ -60,15 +80,17 @@ function toSafeUser(user) {
 /**
  * Register a new user after checking for duplicate email/username and hashing password with bcrypt (>= 12 rounds).
  * Enforces role='user' regardless of input payload to prevent privilege escalation.
- * Supports both Netlify Database (Postgres) and MongoDB seamlessly.
+ * Supports Netlify Database, MongoDB, and Zero-Config Embedded Store.
  * @param {{ username: string, email: string, password: string }} input
  */
 async function registerUser({ username, email, password }) {
   const usernameNormalized = username.toLowerCase();
+  const active = getActiveRepos();
 
-  // 1. Netlify Database (Managed Postgres via @netlify/database)
-  if (isNetlifyDatabaseActive()) {
-    const existingUser = await netlifyUserRepo.findOne({ email, usernameNormalized });
+  // 1. Repository-based storage (Netlify Database or Zero-Config Embedded Store)
+  if (active.type !== 'mongoose') {
+    const { userRepo } = active;
+    const existingUser = await userRepo.findOne({ email, usernameNormalized });
     if (existingUser) {
       if (existingUser.email.toLowerCase() === email.toLowerCase()) {
         throw new AuthError(
@@ -87,7 +109,7 @@ async function registerUser({ username, email, password }) {
     }
 
     const passwordHash = await bcrypt.hash(password, env.bcryptSaltRounds);
-    const createdUser = await netlifyUserRepo.create({
+    const createdUser = await userRepo.create({
       username,
       usernameNormalized,
       email,
@@ -160,13 +182,16 @@ async function registerUser({ username, email, password }) {
 /**
  * Authenticate a user by email or username, compare password in constant time, and issue a signed JWT.
  * Enforces account lockout after 5 consecutive failed attempts.
- * Supports both Netlify Database (Postgres) and MongoDB seamlessly.
+ * Supports Netlify Database, MongoDB, and Zero-Config Embedded Store.
  * @param {{ identifier: string, identifierType: 'email' | 'username', password: string }} input
  */
 async function loginUser({ identifier, identifierType, password }) {
-  // 1. Netlify Database (Managed Postgres via @netlify/database)
-  if (isNetlifyDatabaseActive()) {
-    const user = await netlifyUserRepo.findOne(
+  const active = getActiveRepos();
+
+  // 1. Repository-based storage (Netlify Database or Zero-Config Embedded Store)
+  if (active.type !== 'mongoose') {
+    const { userRepo } = active;
+    const user = await userRepo.findOne(
       identifierType === 'email'
         ? { email: identifier.toLowerCase() }
         : { usernameNormalized: identifier.toLowerCase() }
@@ -190,12 +215,12 @@ async function loginUser({ identifier, identifierType, password }) {
     if (!isPasswordMatch) {
       const attempts = (user.failedLoginAttempts || 0) + 1;
       const lockUntil = attempts >= 5 ? new Date(Date.now() + 15 * 60 * 1000) : null;
-      await netlifyUserRepo.updateFailedAttempts(user.id, attempts, lockUntil);
+      await userRepo.updateFailedAttempts(user.id, attempts, lockUntil);
       throw new AuthError(401, 'INVALID_CREDENTIALS', 'Invalid email/username or password.');
     }
 
     if (user.failedLoginAttempts > 0 || user.lockUntil) {
-      await netlifyUserRepo.resetFailedAttempts(user.id);
+      await userRepo.resetFailedAttempts(user.id);
     }
 
     const jti = crypto.randomUUID();
@@ -289,7 +314,7 @@ async function loginUser({ identifier, identifierType, password }) {
 
 /**
  * Verify JWT signature, claims, revocation status, and user existence.
- * Supports both Netlify Database (Postgres) and MongoDB seamlessly.
+ * Supports Netlify Database, MongoDB, and Zero-Config Embedded Store.
  * @param {string} token
  */
 async function verifyAndLoadUser(token) {
@@ -311,9 +336,12 @@ async function verifyAndLoadUser(token) {
     throw new AuthError(401, 'INVALID_TOKEN', 'Invalid authentication token claims.');
   }
 
-  const isRevoked = isNetlifyDatabaseActive()
-    ? await netlifyTokenRepo.isRevoked(decoded.jti)
-    : await RevokedToken.exists({ jti: decoded.jti });
+  const active = getActiveRepos();
+
+  const isRevoked =
+    active.type !== 'mongoose'
+      ? await active.tokenRepo.isRevoked(decoded.jti)
+      : await RevokedToken.exists({ jti: decoded.jti });
 
   if (isRevoked) {
     throw new AuthError(
@@ -323,9 +351,10 @@ async function verifyAndLoadUser(token) {
     );
   }
 
-  const user = isNetlifyDatabaseActive()
-    ? await netlifyUserRepo.findById(decoded.sub)
-    : await User.findById(decoded.sub).lean();
+  const user =
+    active.type !== 'mongoose'
+      ? await active.userRepo.findById(decoded.sub)
+      : await User.findById(decoded.sub).lean();
 
   if (!user) {
     throw new AuthError(401, 'USER_NOT_FOUND', 'User associated with this token no longer exists.');
@@ -366,9 +395,11 @@ async function requestPasswordReset(rawEmail) {
   }
 
   const email = rawEmail.trim().toLowerCase();
+  const active = getActiveRepos();
 
-  if (isNetlifyDatabaseActive()) {
-    const user = await netlifyUserRepo.findOne({ email });
+  if (active.type !== 'mongoose') {
+    const { userRepo } = active;
+    const user = await userRepo.findOne({ email });
     if (!user) {
       return {
         success: true,
@@ -378,7 +409,7 @@ async function requestPasswordReset(rawEmail) {
 
     const rawResetToken = crypto.randomBytes(32).toString('hex');
     const tokenHash = crypto.createHash('sha256').update(rawResetToken).digest('hex');
-    await netlifyUserRepo.setResetToken(
+    await userRepo.setResetToken(
       user.id,
       tokenHash,
       new Date(Date.now() + 15 * 60 * 1000)
@@ -411,7 +442,6 @@ async function requestPasswordReset(rawEmail) {
   return {
     success: true,
     message: 'If that email address is registered, password reset instructions have been generated.',
-    // Return token in non-production environments to support automated integration testing
     ...(!env.isProduction ? { resetToken: rawResetToken } : {}),
   };
 }
@@ -431,14 +461,16 @@ async function resetPassword({ token, newPassword }) {
   }
 
   const tokenHash = crypto.createHash('sha256').update(token.trim()).digest('hex');
+  const active = getActiveRepos();
 
-  if (isNetlifyDatabaseActive()) {
-    const user = await netlifyUserRepo.findByResetToken(tokenHash);
+  if (active.type !== 'mongoose') {
+    const { userRepo } = active;
+    const user = await userRepo.findByResetToken(tokenHash);
     if (!user) {
       throw new AuthError(400, 'INVALID_RESET_TOKEN', 'Invalid or expired password reset token.');
     }
     const newHash = await bcrypt.hash(newPassword, env.bcryptSaltRounds);
-    await netlifyUserRepo.resetPassword(user.id, newHash);
+    await userRepo.resetPassword(user.id, newHash);
 
     return {
       success: true,
@@ -476,8 +508,11 @@ async function resetPassword({ token, newPassword }) {
  * @param {{ userId: string, currentPassword: string, newPassword: string }} input
  */
 async function changePassword({ userId, currentPassword, newPassword }) {
-  if (isNetlifyDatabaseActive()) {
-    const user = await netlifyUserRepo.findById(userId);
+  const active = getActiveRepos();
+
+  if (active.type !== 'mongoose') {
+    const { userRepo } = active;
+    const user = await userRepo.findById(userId);
     if (!user) {
       throw new AuthError(404, 'USER_NOT_FOUND', 'User not found.');
     }
@@ -488,7 +523,7 @@ async function changePassword({ userId, currentPassword, newPassword }) {
     }
 
     const newHash = await bcrypt.hash(newPassword, env.bcryptSaltRounds);
-    await netlifyUserRepo.updatePassword(user.id, newHash);
+    await userRepo.updatePassword(user.id, newHash);
 
     return {
       success: true,
@@ -523,9 +558,12 @@ async function changePassword({ userId, currentPassword, newPassword }) {
  * Retrieve user list for administrators (enforces RBAC).
  */
 async function getAdminUsers({ limit = 50, skip = 0 } = {}) {
-  if (isNetlifyDatabaseActive()) {
-    const total = await netlifyUserRepo.count();
-    const users = await netlifyUserRepo.list({ limit, skip });
+  const active = getActiveRepos();
+
+  if (active.type !== 'mongoose') {
+    const { userRepo } = active;
+    const total = await userRepo.count();
+    const users = await userRepo.list({ limit, skip });
     return {
       total,
       users: users.map(toSafeUser),
@@ -568,8 +606,9 @@ async function logoutToken(token) {
   }
 
   if (decoded && typeof decoded === 'object' && decoded.jti && decoded.sub && decoded.exp) {
-    if (isNetlifyDatabaseActive()) {
-      await netlifyTokenRepo.revoke({
+    const active = getActiveRepos();
+    if (active.type !== 'mongoose') {
+      await active.tokenRepo.revoke({
         jti: decoded.jti,
         userId: decoded.sub,
         expiresAt: new Date(decoded.exp * 1000),
@@ -595,6 +634,7 @@ async function logoutToken(token) {
  * Build protected dashboard view payload for an authenticated user.
  */
 function buildDashboardPayload(user, auth) {
+  const active = getActiveRepos();
   return {
     user,
     session: {
@@ -606,7 +646,12 @@ function buildDashboardPayload(user, auth) {
       passwordHashing: `bcrypt (${env.bcryptSaltRounds} rounds)`,
       tokenMechanism: 'JWT (HS256) via HttpOnly cookie with Bearer header fallback',
       revocationEnabled: true,
-      databaseProvider: isNetlifyDatabaseActive() ? 'Netlify Database (Postgres)' : 'MongoDB',
+      databaseProvider:
+        active.type === 'netlify'
+          ? 'Netlify Database (Postgres)'
+          : active.type === 'mongoose'
+          ? 'MongoDB'
+          : 'Embedded Zero-Config Serverless Store',
     },
   };
 }
