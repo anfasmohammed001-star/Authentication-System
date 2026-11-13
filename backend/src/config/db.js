@@ -20,12 +20,16 @@ async function connectDatabase(overrideUri) {
   let targetUri = overrideUri || env.mongoUri;
 
   if (!overrideUri && env.useInMemoryDb) {
-    // Lazy load devDependency only when explicitly enabled outside production
-    const { MongoMemoryServer } = require('mongodb-memory-server');
-    memoryServerInstance = await MongoMemoryServer.create();
-    targetUri = memoryServerInstance.getUri();
-    if (!env.isTest) {
-      console.log('[DB] Started ephemeral in-memory MongoDB instance (USE_IN_MEMORY_DB=true).');
+    try {
+      // Lazy load devDependency only when explicitly enabled outside production
+      const { MongoMemoryServer } = require('mongodb-memory-server');
+      memoryServerInstance = await MongoMemoryServer.create();
+      targetUri = memoryServerInstance.getUri();
+      if (!env.isTest) {
+        console.log('[DB] Started ephemeral in-memory MongoDB instance (USE_IN_MEMORY_DB=true).');
+      }
+    } catch (memErr) {
+      console.warn('[DB] in-memory MongoDB initialization skipped:', memErr.message);
     }
   }
 

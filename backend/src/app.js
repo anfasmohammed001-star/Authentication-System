@@ -74,7 +74,7 @@ app.use(cookieParser());
 app.use(sanitizeRequestMiddleware);
 
 // API health check
-app.get('/api/health', (_req, res) => {
+app.get(['/api/health', '/.netlify/functions/api/health'], (_req, res) => {
   const dbStates = ['disconnected', 'connected', 'connecting', 'disconnecting'];
   const state = dbStates[mongoose.connection.readyState] || 'unknown';
   res.status(200).json({
@@ -85,9 +85,13 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
-// Dedicated Auth Module & Protected Dashboard API
-app.use('/api/auth', authRoutes);
-app.get('/api/dashboard', authenticate, authController.getDashboard);
+// Dedicated Auth Module & Protected Dashboard API (supports direct & Netlify function paths)
+app.use(['/api/auth', '/.netlify/functions/api/auth'], authRoutes);
+app.get(
+  ['/api/dashboard', '/.netlify/functions/api/dashboard'],
+  authenticate,
+  authController.getDashboard
+);
 
 // Frontend static pages with server-side route guard for /dashboard
 const frontendDir = path.resolve(__dirname, '../../frontend');
@@ -107,7 +111,7 @@ app.get(['/register', '/register.html'], (_req, res) => {
 app.use(express.static(frontendDir, { index: false }));
 
 // 404 handler for unmatched API routes
-app.use('/api', (_req, res) => {
+app.use(['/api', '/.netlify/functions/api'], (_req, res) => {
   res.status(404).json({
     success: false,
     code: 'NOT_FOUND',

@@ -1,0 +1,9 @@
+# Fallback redirects if Netlify builds from root
+/login       /frontend/index.html 200
+/register    /frontend/register.html 200
+/dashboard   /frontend/dashboard.html 200
+/styles.css  /frontend/styles.css 200
+/app.js      /frontend/app.js 200
+/assets/*    /frontend/assets/:splat 200
+/api/*       /.netlify/functions/api/:splat 200!
+/            /frontend/index.html 200
